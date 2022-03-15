@@ -1,0 +1,25 @@
+version: "3.9"
+services:
+    server:
+        build: server
+        container_name: server
+        depends_on:
+          - database
+        environment:
+          - LISTEN_PORT=${LISTEN_PORT}
+          - DB_HOST=${DB_HOST}
+          - DB_USERNAME=${DB_USERNAME}
+          - DB_PASSWORD=${DB_PASSWORD}
+          - DB_DATABASE=${DB_DATABASE}
+        ports:
+          - ${LISTEN_PORT}:${LISTEN_PORT}
+    database:
+        image: postgres
+        container_name: database
+        volumes:
+          - db:/var/lib/postgresql/data
+        expose:
+          - 5432
+volumes:
+    db:
+        driver: local
