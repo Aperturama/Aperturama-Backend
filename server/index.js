@@ -4,10 +4,11 @@ require('dotenv').config()
 // Initialize Express
 const app = require('express')()
 
-// Define routes
-app.get('/', (req, res) => {
-	res.send('Hello World')
-})
+// The version of the API (included in URL)
+const API_VERSION = 'v1'
+
+// Load routers
+app.use('/api/' + API_VERSION + '/media', require('./routes/media'))
 
 // Start listening
 app.listen(process.env.LISTEN_PORT, () => {
