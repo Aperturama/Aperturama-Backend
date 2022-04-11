@@ -3,8 +3,8 @@ const {db} = require('../db')
 
 router.get('/', async(req, res) => {
 
-	const query = await db.query('SELECT COUNT(1) FROM aperturama.media')
-	res.json({count: query.rows})
+	const query = await db.query('SELECT media_id, date_taken, filename FROM aperturama.media')
+	res.json(query.rows)
 
 })
 
