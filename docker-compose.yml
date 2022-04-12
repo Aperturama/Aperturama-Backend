@@ -5,12 +5,15 @@ services:
         container_name: server
         depends_on:
           - database
+        volumes:
+          - media:/var/lib/apperturama/media
         environment:
           - LISTEN_PORT=${LISTEN_PORT}
           - DB_HOST=${DB_HOST}
           - DB_USERNAME=${DB_USERNAME}
           - DB_PASSWORD=${DB_PASSWORD}
           - DB_DATABASE=${DB_DATABASE}
+          - MEDIA_ROOT=/var/lib/apperturama/media
         ports:
           - ${LISTEN_PORT}:${LISTEN_PORT}
     database:
@@ -24,4 +27,6 @@ services:
           - "5432:5432"
 volumes:
     db:
+        driver: local
+    media:
         driver: local
