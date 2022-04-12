@@ -26,4 +26,14 @@ router.get('/:id(\\d+)/media', async(req, res) => {
 
 })
 
+router.get('/:id(\\d+)/thumbnail', async(req, res) => {
+
+	res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
+		if(err){
+			res.sendStatus(404)
+		}
+	})
+
+})
+
 module.exports = router
