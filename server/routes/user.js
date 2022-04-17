@@ -53,7 +53,7 @@ router.post('/login', async(req, res) => {
 			// Generate JWT
 			const token = jwt.sign({
 				sub: result.rows[0]['user_id']
-			}, fs.readFileSync(process.env['JWT_KEY']));
+			}, fs.readFileSync(process.env['JWT_KEY']), {algorithm: 'HS256'});
 
 			res.send(token);
 
@@ -64,6 +64,17 @@ router.post('/login', async(req, res) => {
 	}else{
 		res.sendStatus(401);
 	}
+
+});
+
+// GET /user - Get user metadata
+router.get('/', async(req, res) => {
+
+	// Get user information from database
+	const result = await db.query('SELECT user_id, email, first_name, last_name FROM aperturama.user WHERE user_id = $1', [req.user['sub']]);
+	// TODO: Error handling
+
+	res.json(result.rows[0]);
 
 });
 
