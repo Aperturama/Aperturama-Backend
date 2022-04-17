@@ -11,4 +11,14 @@ router.get('/', async(req, res) => {
 
 });
 
+// POST /collections - Create a new collection
+router.post('/', async(req, res) => {
+
+	await db.query('INSERT INTO aperturama.collection (owner_user_id, name) VALUES ($1, $2)', [req.user.sub, req.query['name'] || 'Untitled']);
+	// TODO: Error handling
+
+	res.sendStatus(200);
+
+});
+
 module.exports = router;
