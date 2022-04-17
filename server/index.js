@@ -8,6 +8,7 @@ const app = require('express')()
 const API_VERSION = 'v1'
 
 // Load routers
+app.use('/api/' + API_VERSION + '/user', require('./routes/user'));
 app.use('/api/' + API_VERSION + '/media', require('./routes/media'))
 
 // Start listening
