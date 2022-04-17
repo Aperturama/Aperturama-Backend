@@ -21,4 +21,33 @@ router.post('/', async(req, res) => {
 
 });
 
+// POST /collections/<id> - Add media to collection
+router.post('/:id(\\d+)', async(req, res) => {
+
+	// Check if user has access to collection
+	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// TODO: Error handling
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Check if user has access to media
+		query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.query['media_id']]);
+		if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+		// TODO: Error handling
+
+			// Add media to collection
+			await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.query['media_id']]);
+			// TODO: Error handling
+
+			res.sendStatus(200);
+
+		}else{
+			res.sendStatus(401);
+		}
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
 module.exports = router;
