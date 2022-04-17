@@ -91,4 +91,25 @@ router.post('/', multer.single('mediafile'), async(req, res) => {
 
 });
 
+// DELETE /media/<id> - Delete media
+router.delete('/:id(\\d+)', async(req, res) => {
+
+	// Check if user has access to media
+	const query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Delete media
+		await db.query('DELETE FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+		// TODO: Error handling
+
+		res.sendStatus(200);
+
+	}else{
+		res.sendStatus(401);
+	}
+
+})
+
 module.exports = router
