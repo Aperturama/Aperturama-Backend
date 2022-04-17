@@ -5,41 +5,67 @@ const fs = require("fs");
 const exifr = require('exifr');
 const imageThumbnail = require('image-thumbnail');
 
+// GET /media - Retrieve list of user's media
 router.get('/', async(req, res) => {
 
-	const query = await db.query('SELECT media_id, date_taken, filename FROM aperturama.media')
-	res.json(query.rows)
+	const query = await db.query('SELECT media_id, date_taken, filename FROM aperturama.media WHERE owner_user_id = $1', [req.user.sub]);
+	// TODO: Error handling
+
+	res.json(query.rows);
 
 })
 
+// GET /media/<id>/media - Retrieve raw media
 router.get('/:id(\\d+)/media', async(req, res) => {
 
 	// Get file extension from original filename in database
-	const query = await db.query('SELECT filename FROM aperturama.media WHERE media_id = $1', [req.params['id']])
+	const query = await db.query('SELECT owner_user_id, filename FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
 
 	if(query.rows.length === 1){
-		const extension = query.rows[0]['filename'].match(/\.[^.]+$/)[0]
-		res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + extension, (err) => {
-			if(err){
-				res.sendStatus(500)
-			}
-		})
+
+		// Check that authenticated user is owner
+		if(query.rows[0]['owner_user_id'] === req.user.sub){
+
+			const extension = query.rows[0]['filename'].match(/\.[^.]+$/)[0];
+			res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + extension, (err) => {
+				if(err){
+					res.sendStatus(500);
+				}
+			});
+
+		}else{
+			res.sendStatus(401);
+		}
+
 	}else{
-		res.sendStatus(404)
+		res.sendStatus(401);
 	}
 
 })
 
+// GET /media/<id>/thumbnail - Retrieve raw thumbnail
 router.get('/:id(\\d+)/thumbnail', async(req, res) => {
 
-	res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
-		if(err){
-			res.sendStatus(404)
-		}
-	})
+	// Check if authenticated user is authorized
+	const query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
+			if(err){
+				res.sendStatus(401);
+			}
+		})
+
+	}else{
+		res.sendStatus(401);
+	}
 
 })
 
+// POST /media - Upload new media
 router.post('/', multer.single('mediafile'), async(req, res) => {
 
 	// Parse EXIF data for date taken
@@ -47,7 +73,7 @@ router.post('/', multer.single('mediafile'), async(req, res) => {
 	// TODO: Handle error/no DateTimeOriginal
 
 	// Create media entry in database
-	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename) VALUES ($1, $2, $3) RETURNING media_id', [0, exif['DateTimeOriginal'], req.file.originalname]);
+	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename) VALUES ($1, $2, $3) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], req.file.originalname]);
 	// TODO: Authenticate, get user ID for owner user ID
 	// TODO: Error handling
 
