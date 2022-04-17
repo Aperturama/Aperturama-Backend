@@ -39,6 +39,24 @@ router.put('/:id(\\d+)', async(req, res) => {
 
 });
 
+// DELETE /collections/<id> - Delete a collection
+router.delete('/:id(\\d+)', async(req, res) => {
+
+	// Check if user has access to collection
+	const query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Delete collection
+		await db.query('DELETE FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+
+		res.sendStatus(200);
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
 // POST /collections/<id> - Add media to collection
 router.post('/:id(\\d+)', async(req, res) => {
 
