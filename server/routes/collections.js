@@ -105,4 +105,24 @@ router.post('/:id(\\d+)', async(req, res) => {
 
 });
 
+// DELETE /collections/<collectionid>/media/<mediaid> - Remove media from collection
+router.delete('/:id(\\d+)/media/:mediaid(\\d+)', async(req, res) => {
+
+	// Check if user has access to collection
+	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// TODO: Error handling
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Remove media from collection
+		await db.query('DELETE FROM aperturama.collection_media WHERE collection_id = $1 AND media_id = $2', [req.params['id'], req.params['mediaid']]);
+		// TODO: Error handling
+
+		res.sendStatus(200);
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
 module.exports = router;
