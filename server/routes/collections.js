@@ -21,6 +21,25 @@ router.post('/', async(req, res) => {
 
 });
 
+// GET /collections/<id> - Get media in a collection
+router.get('/:id(\\d+)', async(req, res) => {
+
+	// Check if user has access to collection
+	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// TODO: Error handling
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Get media in collection
+		query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [req.params['id']]);
+		// TODO: Error handling
+		res.json(query.rows);
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
 // PUT /collections/<id> - Update a collection (rename)
 router.put('/:id(\\d+)', async(req, res) => {
 
