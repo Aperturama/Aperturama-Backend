@@ -28,7 +28,8 @@ app.use(jwt({secret: fs.readFileSync(process.env['JWT_KEY']), algorithms: ['HS25
 
 // Load routers
 app.use('/api/' + API_VERSION + '/user', require('./routes/user'));
-app.use('/api/' + API_VERSION + '/media', require('./routes/media'))
+app.use('/api/' + API_VERSION + '/media', require('./routes/media'));
+app.use('/api/' + API_VERSION + '/collections', require('./routes/collections'));
 
 // Start listening
 app.listen(process.env.LISTEN_PORT, () => {
