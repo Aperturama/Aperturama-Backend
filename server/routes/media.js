@@ -4,6 +4,7 @@ const {db} = require('../db')
 const fs = require("fs");
 const exifr = require('exifr');
 const imageThumbnail = require('image-thumbnail');
+const crypto = require('crypto');
 
 // GET /media - Retrieve list of user's media
 router.get('/', async(req, res) => {
@@ -156,6 +157,30 @@ router.delete('/:id(\\d+)/share/user', async(req, res) => {
 		// TODO: Error handling
 
 		res.sendStatus(200);
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
+// POST /media/<id>/share/link - Share media with a link
+router.post('/:id(\\d+)/share/link', async(req, res) => {
+
+	// Check if user has access to media
+	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Create random code for link if not given
+		const code = req.query['code'] ?? crypto.randomBytes(32).toString('base64url');
+
+		// Create link in database
+		await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.query['password'] ?? null]);
+		// TODO: Error handling
+
+		res.json({code: code});
 
 	}else{
 		res.sendStatus(401);
