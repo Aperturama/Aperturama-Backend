@@ -23,10 +23,10 @@ router.post('/', async(req, res) => {
 	try{
 
 		// Hash and salt password
-		const hashString = await hash(req.query['password']);
+		const hashString = await hash(req.body['password']);
 
 		// Create new user in database
-		const result = await db.query('INSERT INTO aperturama.user (email, first_name, last_name, password) VALUES ($1, $2, $3, $4)', [req.query['email'], req.query['first_name'], req.query['last_name'], hashString]);
+		const result = await db.query('INSERT INTO aperturama.user (email, first_name, last_name, password) VALUES ($1, $2, $3, $4)', [req.body['email'], req.body['first_name'], req.body['last_name'], hashString]);
 		// TODO: Error handling (user already exists)
 
 		res.sendStatus(200);
@@ -41,14 +41,14 @@ router.post('/', async(req, res) => {
 router.post('/login', async(req, res) => {
 
 	// Get user information from database
-	const result = await db.query('SELECT user_id, password FROM aperturama.user WHERE email = $1', [req.query['email']]);
+	const result = await db.query('SELECT user_id, password FROM aperturama.user WHERE email = $1', [req.body['email']]);
 	// TODO: Error handling
 
 	if(result.rows.length === 1){
 
 		// Check password
 		const salt = Buffer.from(result.rows[0]['password'].split(':')[0], 'hex');
-		if(await hash(req.query['password'], salt) === result.rows[0]['password']){
+		if(await hash(req.body['password'], salt) === result.rows[0]['password']){
 
 			// Generate JWT
 			const token = jwt.sign({

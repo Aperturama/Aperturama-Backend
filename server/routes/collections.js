@@ -14,7 +14,7 @@ router.get('/', async(req, res) => {
 // POST /collections - Create a new collection
 router.post('/', async(req, res) => {
 
-	await db.query('INSERT INTO aperturama.collection (owner_user_id, name) VALUES ($1, $2)', [req.user.sub, req.query['name'] || 'Untitled']);
+	await db.query('INSERT INTO aperturama.collection (owner_user_id, name) VALUES ($1, $2)', [req.user.sub, req.body['name'] || 'Untitled']);
 	// TODO: Error handling
 
 	res.sendStatus(200);
@@ -48,7 +48,7 @@ router.put('/:id(\\d+)', async(req, res) => {
 	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
 
 		// Update collection name
-		await db.query('UPDATE aperturama.collection SET name = $1 WHERE collection_id = $2', [req.query['name'], req.params['id']]);
+		await db.query('UPDATE aperturama.collection SET name = $1 WHERE collection_id = $2', [req.body['name'], req.params['id']]);
 
 		res.sendStatus(200);
 
@@ -85,12 +85,12 @@ router.post('/:id(\\d+)', async(req, res) => {
 	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
 
 		// Check if user has access to media
-		query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.query['media_id']]);
+		query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.body['media_id']]);
 		if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
 		// TODO: Error handling
 
 			// Add media to collection
-			await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.query['media_id']]);
+			await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.body['media_id']]);
 			// TODO: Error handling
 
 			res.sendStatus(200);

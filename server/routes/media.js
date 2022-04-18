@@ -90,7 +90,7 @@ router.delete('/:id(\\d+)', auth_media(), async(req, res) => {
 router.post('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
 
 	// Get shared user's ID from email
-	const query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.query['email']]);
+	const query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.body['email']]);
 	// TODO: Error handling
 
 	if(query.rows.length === 1){
@@ -110,7 +110,7 @@ router.post('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
 // DELETE /media/<id>/share/user - Stop sharing media with a user
 router.delete('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
 
-	await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_to_user_id = $2', [req.params['id'], req.query['user_id']]);
+	await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_to_user_id = $2', [req.params['id'], req.body['user_id']]);
 	// TODO: Error handling
 
 	res.sendStatus(200);
@@ -121,10 +121,10 @@ router.delete('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
 router.post('/:id(\\d+)/share/link', auth_media(), async(req, res) => {
 
 	// Create random code for link if not given
-	const code = req.query['code'] ?? crypto.randomBytes(32).toString('base64url');
+	const code = req.body['code'] ?? crypto.randomBytes(32).toString('base64url');
 
 	// Create link in database
-	await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.query['password'] ?? null]);
+	await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.body['password'] ?? null]);
 	// TODO: Error handling
 
 	res.json({code: code});

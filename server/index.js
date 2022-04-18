@@ -5,7 +5,8 @@ const jwt = require('express-jwt');
 const fs = require("fs");
 
 // Initialize Express
-const app = require('express')()
+const express = require('express');
+const app = express();
 
 // The version of the API (included in URL)
 const API_VERSION = 'v1'
@@ -25,6 +26,9 @@ app.use(jwt({secret: fs.readFileSync(process.env['JWT_KEY']), algorithms: ['HS25
 	}
 	next();
 });
+
+// Body parser middleware for URL encoded request data
+app.use(express.urlencoded({extended: true}));
 
 // Load routers
 app.use('/api/' + API_VERSION + '/user', require('./routes/user'));

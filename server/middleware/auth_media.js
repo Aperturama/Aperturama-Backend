@@ -30,8 +30,8 @@ module.exports = (check_shared = false) => {
 			}
 
 			// Check if user has shared link access to media
-			const share_code = req.query['code'] ?? null;
-			const share_password = req.query['password'] ?? null;
+			const share_code = req.body['code'] ?? null;
+			const share_password = req.body['password'] ?? null;
 
 			if(share_code){
 
