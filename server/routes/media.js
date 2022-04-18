@@ -112,4 +112,34 @@ router.delete('/:id(\\d+)', async(req, res) => {
 
 })
 
+// POST /media/<id>/share/user - Share media with a user
+router.post('/:id(\\d+)/share/user', async(req, res) => {
+
+	// Check if user has access to media
+	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+
+		// Get shared user's ID from email
+		query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.query['email']]);
+		// TODO: Error handling
+		if(query.rows.length === 1){
+
+			// Share media with the user
+			await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_to_user_id) VALUES ($1, $2)', [req.params['id'], query.rows[0]['user_id']]);
+			// TODO: Error handling
+
+			res.sendStatus(200);
+
+		}else{
+			res.sendStatus(404);
+		}
+
+	}else{
+		res.sendStatus(401);
+	}
+
+});
+
 module.exports = router
