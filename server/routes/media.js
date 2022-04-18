@@ -5,6 +5,7 @@ const fs = require("fs");
 const exifr = require('exifr');
 const imageThumbnail = require('image-thumbnail');
 const crypto = require('crypto');
+const auth_media = require('../middleware/auth_media');
 
 // GET /media - Retrieve list of user's media
 router.get('/', async(req, res) => {
@@ -17,52 +18,35 @@ router.get('/', async(req, res) => {
 })
 
 // GET /media/<id>/media - Retrieve raw media
-router.get('/:id(\\d+)/media', async(req, res) => {
+router.get('/:id(\\d+)/media', auth_media(true), async(req, res) => {
 
 	// Get file extension from original filename in database
-	const query = await db.query('SELECT owner_user_id, filename FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	const query = await db.query('SELECT filename FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
 	// TODO: Error handling
 
 	if(query.rows.length === 1){
 
-		// Check that authenticated user is owner
-		if(query.rows[0]['owner_user_id'] === req.user.sub){
-
-			const extension = query.rows[0]['filename'].match(/\.[^.]+$/)[0];
-			res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + extension, (err) => {
-				if(err){
-					res.sendStatus(500);
-				}
-			});
-
-		}else{
-			res.sendStatus(401);
-		}
+		const extension = query.rows[0]['filename'].match(/\.[^.]+$/)[0];
+		res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + extension, (err) => {
+			if(err){
+				res.sendStatus(500);
+			}
+		});
 
 	}else{
-		res.sendStatus(401);
+		res.sendStatus(500);
 	}
 
 })
 
 // GET /media/<id>/thumbnail - Retrieve raw thumbnail
-router.get('/:id(\\d+)/thumbnail', async(req, res) => {
+router.get('/:id(\\d+)/thumbnail', auth_media(true), async(req, res) => {
 
-	// Check if authenticated user is authorized
-	const query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
-	// TODO: Error handling
-
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
-			if(err){
-				res.sendStatus(401);
-			}
-		})
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
+		if(err){
+			res.sendStatus(401);
+		}
+	});
 
 })
 
@@ -93,119 +77,68 @@ router.post('/', multer.single('mediafile'), async(req, res) => {
 });
 
 // DELETE /media/<id> - Delete media
-router.delete('/:id(\\d+)', async(req, res) => {
+router.delete('/:id(\\d+)', auth_media(), async(req, res) => {
 
-	// Check if user has access to media
-	const query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	await db.query('DELETE FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
 	// TODO: Error handling
 
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+	res.sendStatus(200);
 
-		// Delete media
-		await db.query('DELETE FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+})
+
+// POST /media/<id>/share/user - Share media with a user
+router.post('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
+
+	// Get shared user's ID from email
+	const query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.query['email']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1){
+
+		// Share media with the user
+		await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_to_user_id) VALUES ($1, $2)', [req.params['id'], query.rows[0]['user_id']]);
 		// TODO: Error handling
 
 		res.sendStatus(200);
 
 	}else{
-		res.sendStatus(401);
-	}
-
-})
-
-// POST /media/<id>/share/user - Share media with a user
-router.post('/:id(\\d+)/share/user', async(req, res) => {
-
-	// Check if user has access to media
-	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
-	// TODO: Error handling
-
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		// Get shared user's ID from email
-		query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.query['email']]);
-		// TODO: Error handling
-		if(query.rows.length === 1){
-
-			// Share media with the user
-			await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_to_user_id) VALUES ($1, $2)', [req.params['id'], query.rows[0]['user_id']]);
-			// TODO: Error handling
-
-			res.sendStatus(200);
-
-		}else{
-			res.sendStatus(404);
-		}
-
-	}else{
-		res.sendStatus(401);
+		res.sendStatus(404);
 	}
 
 });
 
 // DELETE /media/<id>/share/user - Stop sharing media with a user
-router.delete('/:id(\\d+)/share/user', async(req, res) => {
+router.delete('/:id(\\d+)/share/user', auth_media(), async(req, res) => {
 
-	// Check if user has access to media
-	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_to_user_id = $2', [req.params['id'], req.query['user_id']]);
 	// TODO: Error handling
 
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		// Un-share media with user
-		await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_to_user_id = $2', [req.params['id'], req.query['user_id']]);
-		// TODO: Error handling
-
-		res.sendStatus(200);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
 // POST /media/<id>/share/link - Share media with a link
-router.post('/:id(\\d+)/share/link', async(req, res) => {
+router.post('/:id(\\d+)/share/link', auth_media(), async(req, res) => {
 
-	// Check if user has access to media
-	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	// Create random code for link if not given
+	const code = req.query['code'] ?? crypto.randomBytes(32).toString('base64url');
+
+	// Create link in database
+	await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.query['password'] ?? null]);
 	// TODO: Error handling
 
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		// Create random code for link if not given
-		const code = req.query['code'] ?? crypto.randomBytes(32).toString('base64url');
-
-		// Create link in database
-		await db.query('INSERT INTO aperturama.media_sharing (media_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.query['password'] ?? null]);
-		// TODO: Error handling
-
-		res.json({code: code});
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.json({code: code});
 
 });
 
 // DELETE /media/<id>/share/link/<code> - Stop sharing media with a link
-router.delete('/:id(\\d+)/share/link/:code', async(req, res) => {
+router.delete('/:id(\\d+)/share/link/:code', auth_media(), async(req, res) => {
 
-	// Check if user has access to media
-	let query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
-	// TODO: Error handling
+	// Delete shared link
+	await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_link_code = $2', [req.params['id'], req.params['code']]);
+	// TODO: Error handling (invalid code)
 
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		// Delete shared link
-		await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1 AND shared_link_code = $2', [req.params['id'], req.params['code']]);
-		// TODO: Error handling (invalid code)
-
-		res.sendStatus(200);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
