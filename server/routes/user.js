@@ -78,6 +78,29 @@ router.get('/', async(req, res) => {
 
 });
 
+// PUT /user - Update user info
+router.put('/', async(req, res) => {
+
+	// Update name and email
+	await db.query('UPDATE aperturama.user SET (first_name, last_name, email) = ($2, $3, $4) WHERE user_id = $1', [req.user.sub, req.body['first_name'], req.body['last_name'], req.body['email']]);
+	// TODO: Error handling
+
+	// Update password if given
+	if(req.body['password']){
+
+		// Hash and salt password
+		const hashString = await hash(req.body['password']);
+
+		// Update hash in database
+		await db.query('UPDATE aperturama.user SET password = $2 WHERE user_id = $1', [req.user.sub, hashString]);
+		// TODO: Error handling
+
+	}
+
+	res.sendStatus(200);
+
+});
+
 // GET /user/statistics - Get user usage statistics
 router.get('/statistics', async(req, res) => {
 
