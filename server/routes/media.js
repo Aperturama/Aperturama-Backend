@@ -66,32 +66,41 @@ router.get('/:id(\\d+)/thumbnail', auth_media(true), async(req, res) => {
 })
 
 // POST /media - Upload new media
-router.post('/', multer.single('mediafile'), async(req, res) => {
+router.post('/', multer.any(), async(req, res) => {
+
+	// Check that single file was uploaded
+	if(!req.files || req.files.length !== 1){
+		console.log(req);
+		res.sendStatus(400);
+		return;
+	}
+
+	let file = req.files[0];
 
 	// Parse EXIF data for date taken
 	let exif;
 	try{
-		exif = await exifr.parse(req.file.path, {pick: ['DateTimeOriginal']}) ?? {DateTimeOriginal: null};
+		exif = await exifr.parse(file.path, {pick: ['DateTimeOriginal']}) ?? {DateTimeOriginal: null};
 	}catch(err){
 		exif = {DateTimeOriginal: null};
 	}
 
 	// Compute hash of media
-	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(req.file.path)).digest('base64url');
+	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(file.path)).digest('base64url');
 
 	// Create media entry in database
-	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], req.file.originalname, hash]);
+	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], file.originalname, hash]);
 	// TODO: Authenticate, get user ID for owner user ID
 	// TODO: Error handling
 
 	// Create thumbnail
-	const thumbnail = await imageThumbnail(req.file.path, {width: 256, height: 256, fit: 'cover', jpegOptions: {force: true}});
+	const thumbnail = await imageThumbnail(file.path, {width: 256, height: 256, fit: 'cover', jpegOptions: {force: true}});
 	await fs.promises.writeFile(process.env['MEDIA_ROOT'] + '/' + query.rows[0]['media_id'] + '.thumbnail.jpg', thumbnail);
 	// TODO: Error handling
 
 	// Rename file to media ID
-	const extension = req.file.originalname.match(/\.[^.]+$/);
-	await fs.promises.rename(req.file.path, req.file.destination + '/' + query.rows[0]['media_id'] + extension);
+	const extension = file.originalname.match(/\.[^.]+$/);
+	await fs.promises.rename(file.path, file.destination + '/' + query.rows[0]['media_id'] + extension);
 	// TODO: Error handling
 
 	res.sendStatus(200);
