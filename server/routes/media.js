@@ -17,6 +17,21 @@ router.get('/', async(req, res) => {
 
 })
 
+// GET /media/checkhash - Check if a media hash has already been uploaded for the user
+router.get('/checkhash', async(req, res) => {
+
+	// Check for media with given hash owned by authenticated user
+	const query = await db.query('SELECT COUNT(1) AS count FROM aperturama.media WHERE hash = $1 AND owner_user_id = $2', [req.body['hash'], req.user.sub]);
+	// TODO: Error handling
+
+	if(parseInt(query.rows[0]['count']) > 0){
+		res.sendStatus(304);// If found, return 304 Not Modified
+	}else{
+		res.sendStatus(204);// If not found, return 204 No Content
+	}
+
+});
+
 // GET /media/<id>/media - Retrieve raw media
 router.get('/:id(\\d+)/media', auth_media(true), async(req, res) => {
 
@@ -54,11 +69,14 @@ router.get('/:id(\\d+)/thumbnail', auth_media(true), async(req, res) => {
 router.post('/', multer.single('mediafile'), async(req, res) => {
 
 	// Parse EXIF data for date taken
-	let exif = await exifr.parse(req.file.path, {pick: ['DateTimeOriginal']});
+	const exif = await exifr.parse(req.file.path, {pick: ['DateTimeOriginal']});
 	// TODO: Handle error/no DateTimeOriginal
 
+	// Compute hash of media
+	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(req.file.path)).digest('base64url');
+
 	// Create media entry in database
-	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename) VALUES ($1, $2, $3) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], req.file.originalname]);
+	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], req.file.originalname, hash]);
 	// TODO: Authenticate, get user ID for owner user ID
 	// TODO: Error handling
 
