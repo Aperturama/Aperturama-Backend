@@ -106,20 +106,32 @@ router.get('/statistics', async(req, res) => {
 
 	let stats = {
 		n_media: 0,
+		n_collections: 0,
+		n_shared: 0,
 		bytes_used: 0,
 		bytes_total: 0
 	};
 
 	// Get media list for user
 	const result = await db.query('SELECT media_id, filename FROM aperturama.media WHERE owner_user_id = $1', [req.user['sub']]);
+	// TODO: Error handling
 
 	// Media count
 	stats['n_media'] = result.rows.length;
+
+	// Get collections count for user
+	stats['n_collections'] = parseInt((await db.query('SELECT COUNT(1) AS count FROM aperturama.collection WHERE owner_user_id = $1', [req.user['sub']])).rows[0]['count']);
+	// TODO: Error handling
+
+	// Get shared item count for user (sum of shared media and shared collections)
+	stats['n_shared'] = parseInt((await db.query('SELECT (SELECT COUNT(1) FROM aperturama.media_sharing JOIN aperturama.media ON media_sharing.media_id = media.media_id WHERE owner_user_id = $1) + (SELECT COUNT(1) FROM aperturama.collection_sharing JOIN aperturama.collection ON collection_sharing.collection_id = collection.collection_id WHERE owner_user_id = $1) AS count', [req.user['sub']])).rows[0]['count']);
+	// TODO: Error handling
 
 	// Get disk usage for media and thumbnails
 	for(let media of result.rows){
 		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + media['filename'].match(/\.[^.]+$/)[0])).size;
 		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + '.thumbnail.jpg')).size;
+		// TODO: Error handling
 	}
 
 	// Get total disk space
