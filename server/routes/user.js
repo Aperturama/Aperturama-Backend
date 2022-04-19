@@ -53,7 +53,7 @@ router.post('/login', async(req, res) => {
 			// Generate JWT
 			const token = jwt.sign({
 				sub: result.rows[0]['user_id']
-			}, fs.readFileSync(process.env['JWT_KEY']), {algorithm: 'HS256'});
+			}, await fs.promises.readFile(process.env['JWT_KEY']), {algorithm: 'HS256'});
 
 			res.send(token);
 

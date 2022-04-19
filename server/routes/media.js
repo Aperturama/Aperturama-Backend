@@ -82,12 +82,12 @@ router.post('/', multer.single('mediafile'), async(req, res) => {
 
 	// Create thumbnail
 	const thumbnail = await imageThumbnail(req.file.path, {width: 256, height: 256, fit: 'cover', jpegOptions: {force: true}});
-	fs.writeFileSync(process.env['MEDIA_ROOT'] + '/' + query.rows[0]['media_id'] + '.thumbnail.jpg', thumbnail);
+	await fs.promises.writeFile(process.env['MEDIA_ROOT'] + '/' + query.rows[0]['media_id'] + '.thumbnail.jpg', thumbnail);
 	// TODO: Error handling
 
 	// Rename file to media ID
 	const extension = req.file.originalname.match(/\.[^.]+$/);
-	fs.renameSync(req.file.path, req.file.destination + '/' + query.rows[0]['media_id'] + extension);
+	await fs.promises.rename(req.file.path, req.file.destination + '/' + query.rows[0]['media_id'] + extension);
 	// TODO: Error handling
 
 	res.sendStatus(200);
