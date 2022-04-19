@@ -1,5 +1,7 @@
 const router = require('express').Router();
 const {db} = require('../db');
+const auth_media = require('../middleware/auth_media');
+const auth_collection = require('../middleware/auth_collection');
 
 // GET /collections - Retrieve list of user's collections
 router.get('/', async(req, res) => {
@@ -22,106 +24,56 @@ router.post('/', async(req, res) => {
 });
 
 // GET /collections/<id> - Get media in a collection
-router.get('/:id(\\d+)', async(req, res) => {
+router.get('/:id(\\d+)', auth_collection(), async(req, res) => {
 
-	// Check if user has access to collection
-	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// Get media in collection
+	const query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [req.params['id']]);
 	// TODO: Error handling
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-
-		// Get media in collection
-		query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [req.params['id']]);
-		// TODO: Error handling
-		res.json(query.rows);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.json(query.rows);
 
 });
 
 // PUT /collections/<id> - Update a collection (rename)
-router.put('/:id(\\d+)', async(req, res) => {
+router.put('/:id(\\d+)', auth_collection(), async(req, res) => {
 
-	// Check if user has access to collection
-	const query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+	// Update collection name
+	await db.query('UPDATE aperturama.collection SET name = $1 WHERE collection_id = $2', [req.body['name'], req.params['id']]);
+	// TODO: Error handling
 
-		// Update collection name
-		await db.query('UPDATE aperturama.collection SET name = $1 WHERE collection_id = $2', [req.body['name'], req.params['id']]);
-
-		res.sendStatus(200);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
 // DELETE /collections/<id> - Delete a collection
-router.delete('/:id(\\d+)', async(req, res) => {
+router.delete('/:id(\\d+)', auth_collection(),async(req, res) => {
 
-	// Check if user has access to collection
-	const query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
+	// Delete collection
+	await db.query('DELETE FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// TODO: Error handling
 
-		// Delete collection
-		await db.query('DELETE FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
-
-		res.sendStatus(200);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
 // POST /collections/<id> - Add media to collection
-router.post('/:id(\\d+)', async(req, res) => {
+router.post('/:id(\\d+)', auth_collection(), auth_media(), async(req, res) => {
 
-	// Check if user has access to collection
-	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// Add media to collection
+	await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.body['media_id']]);
 	// TODO: Error handling
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
 
-		// Check if user has access to media
-		query = await db.query('SELECT owner_user_id FROM aperturama.media WHERE media_id = $1', [req.body['media_id']]);
-		if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
-		// TODO: Error handling
-
-			// Add media to collection
-			await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.body['media_id']]);
-			// TODO: Error handling
-
-			res.sendStatus(200);
-
-		}else{
-			res.sendStatus(401);
-		}
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
 // DELETE /collections/<collectionid>/media/<mediaid> - Remove media from collection
-router.delete('/:id(\\d+)/media/:mediaid(\\d+)', async(req, res) => {
+router.delete('/:id(\\d+)/media/:mediaid(\\d+)', auth_collection(), async(req, res) => {
 
-	// Check if user has access to collection
-	let query = await db.query('SELECT owner_user_id FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	// Remove media from collection
+	await db.query('DELETE FROM aperturama.collection_media WHERE collection_id = $1 AND media_id = $2', [req.params['id'], req.params['mediaid']]);
 	// TODO: Error handling
-	if(query.rows.length === 1 && query.rows[0]['owner_user_id'] === req.user.sub){
 
-		// Remove media from collection
-		await db.query('DELETE FROM aperturama.collection_media WHERE collection_id = $1 AND media_id = $2', [req.params['id'], req.params['mediaid']]);
-		// TODO: Error handling
-
-		res.sendStatus(200);
-
-	}else{
-		res.sendStatus(401);
-	}
+	res.sendStatus(200);
 
 });
 
