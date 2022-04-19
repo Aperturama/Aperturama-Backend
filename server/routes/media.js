@@ -69,8 +69,12 @@ router.get('/:id(\\d+)/thumbnail', auth_media(true), async(req, res) => {
 router.post('/', multer.single('mediafile'), async(req, res) => {
 
 	// Parse EXIF data for date taken
-	const exif = await exifr.parse(req.file.path, {pick: ['DateTimeOriginal']});
-	// TODO: Handle error/no DateTimeOriginal
+	let exif;
+	try{
+		exif = await exifr.parse(req.file.path, {pick: ['DateTimeOriginal']}) ?? {DateTimeOriginal: null};
+	}catch(err){
+		exif = {DateTimeOriginal: null};
+	}
 
 	// Compute hash of media
 	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(req.file.path)).digest('base64url');
