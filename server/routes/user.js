@@ -78,4 +78,36 @@ router.get('/', async(req, res) => {
 
 });
 
+// GET /user/statistics - Get user usage statistics
+router.get('/statistics', async(req, res) => {
+
+	let stats = {
+		n_media: 0,
+		bytes_used: 0,
+		bytes_total: 0
+	};
+
+	// Get media list for user
+	const result = await db.query('SELECT media_id, filename FROM aperturama.media WHERE owner_user_id = $1', [req.user['sub']]);
+
+	// Media count
+	stats['n_media'] = result.rows.length;
+
+	// Get disk usage for media and thumbnails
+	for(let media of result.rows){
+		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + media['filename'].match(/\.[^.]+$/)[0])).size;
+		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + '.thumbnail.jpg')).size;
+	}
+
+	// Get total disk space
+	try{
+		stats['bytes_total'] = (await require('check-disk-space').default(process.env['MEDIA_ROOT']))['size'];
+	}catch(err){
+		console.error('Error: Cannot get disk size for MEDIA_ROOT: ' + process.env['MEDIA_ROOT']);
+	}
+
+	res.json(stats);
+
+});
+
 module.exports = router
