@@ -46,9 +46,29 @@ module.exports = (check_shared = false) => {
 
 			}
 
-			// TODO: Check if media is in shared collection that user has access to
+			// Check if media is in shared collection that user has access to
+			try{
+				const query = await db.query('SELECT COUNT(1) FROM aperturama.collection_media JOIN aperturama.collection_sharing ON collection_media.collection_id=collection_sharing.collection_id WHERE collection_media.media_id = $1 AND collection_sharing.shared_to_user_id = $2', [media_id, user_id]);
+				if(parseInt(query.rows[0]['count']) > 0){
+					return next();// Continue since authorized
+				}
+			}catch(err){
+				res.sendStatus(500);
+			}
 
-			// TODO: Check if media is in shared collection that code has access to
+			// Check if media is in shared collection that code has access to
+			if(share_code){
+
+				try{
+					const query = await db.query('SELECT COUNT(1) FROM aperturama.collection_media JOIN aperturama.collection_sharing ON collection_media.collection_id=collection_sharing.collection_id WHERE collection_media.media_id = $1 AND collection_sharing.shared_link_code = $2 AND (shared_link_password IS NULL OR shared_link_password = $3)', [media_id, share_code, share_password]);
+					if(parseInt(query.rows[0]['count']) === 1){
+						return next();// Continue since authorized
+					}
+				}catch(err){
+					res.sendStatus(500);
+				}
+
+			}
 
 		}
 
