@@ -15,7 +15,17 @@ router.get('/', async(req, res) => {
 
 	res.json(query.rows);
 
-})
+});
+
+// GET /media/shared - Retrieve list of media shared with user
+router.get('/shared', async(req, res) => {
+
+	const query = await db.query('SELECT aperturama.media.media_id, date_taken, filename FROM aperturama.media JOIN aperturama.media_sharing ON aperturama.media.media_id=aperturama.media_sharing.media_id WHERE shared_to_user_id = $1', [req.user.sub]);
+	// TODO: Error handling
+
+	res.json(query.rows);
+
+});
 
 // GET /media/checkhash - Check if a media hash has already been uploaded for the user
 router.get('/checkhash', async(req, res) => {
