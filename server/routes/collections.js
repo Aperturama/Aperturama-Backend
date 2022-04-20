@@ -14,6 +14,16 @@ router.get('/', async(req, res) => {
 
 });
 
+// GET /collections/shared - Retrieve list of collections shared with user
+router.get('/shared', async(req, res) => {
+
+	const query = await db.query('SELECT aperturama.collection.collection_id, name FROM aperturama.collection JOIN aperturama.collection_sharing ON aperturama.collection.collection_id=aperturama.collection_sharing.collection_id WHERE shared_to_user_id = $1', [req.user.sub]);
+	// TODO: Error handling
+
+	res.json(query.rows);
+
+});
+
 // POST /collections - Create a new collection
 router.post('/', async(req, res) => {
 
