@@ -32,6 +32,45 @@ router.get('/checkhash', async(req, res) => {
 
 });
 
+// GET /media/<id> - Get media metadata and sharing status
+router.get('/:id(\\d+)', auth_media(true), async(req, res) => {
+
+	let media = {sharing: []};
+
+	// Get media metadata
+	let query = await db.query('SELECT date_uploaded, date_taken, filename FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
+	media['date_uploaded'] = query.rows[0]['date_uploaded'];
+	media['date_taken'] = query.rows[0]['date_taken'];
+	media['filename'] = query.rows[0]['filename'];
+	// TODO: Error handling
+
+	// TODO: Get EXIF data
+
+	// Get users shared with
+	query = await db.query('SELECT email FROM aperturama.user JOIN aperturama.media_sharing ON aperturama.user.user_id=aperturama.media_sharing.shared_to_user_id WHERE aperturama.media_sharing.media_id = $1 AND aperturama.media_sharing.shared_link_code IS NULL', [req.params['id']]);
+	if(query.rows.length > 0){
+		query.rows.forEach(row => media['sharing'].push(row));
+	}
+	// TODO: Error handling
+
+	// Get links shared with
+	query = await db.query('SELECT shared_link_code AS code, shared_link_password AS password FROM aperturama.media_sharing WHERE media_id = $1 AND shared_to_user_id IS NULL', [req.params['id']]);
+	if(query.rows.length > 0){
+		query.rows.forEach(row => media['sharing'].push(row));
+	}
+	// TODO: Error handling
+
+	// Get shared collections media is part of
+	query = await db.query('SELECT name AS collection FROM aperturama.collection JOIN aperturama.collection_sharing ON collection.collection_id=collection_sharing.collection_id JOIN aperturama.collection_media ON aperturama.collection_sharing.collection_id=aperturama.collection_media.collection_id WHERE aperturama.collection_media.media_id = $1', [req.params['id']]);
+	if(query.rows.length > 0){
+		query.rows.forEach(row => media['sharing'].push(row));
+	}
+	// TODO: Error handling
+
+	res.json(media);
+
+});
+
 // GET /media/<id>/media - Retrieve raw media
 router.get('/:id(\\d+)/media', auth_media(true), async(req, res) => {
 
