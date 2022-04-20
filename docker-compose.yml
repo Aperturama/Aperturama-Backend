@@ -6,7 +6,7 @@ services:
         depends_on:
           - database
         volumes:
-          - media:/var/lib/apperturama/media
+          - media:/var/lib/aperturama/media
         environment:
           - LISTEN_PORT=${LISTEN_PORT}
           - DB_HOST=${DB_HOST}
