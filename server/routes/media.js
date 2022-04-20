@@ -82,7 +82,7 @@ router.get('/:id(\\d+)', auth_media(true), async(req, res) => {
 });
 
 // GET /media/<id>/media - Retrieve raw media
-router.get('/:id(\\d+)/media', auth_media(true), async(req, res) => {
+router.get('/:id(\\d+)/media/:shared(shared)?', auth_media(true), async(req, res) => {
 
 	// Get file extension from original filename in database
 	const query = await db.query('SELECT filename FROM aperturama.media WHERE media_id = $1', [req.params['id']]);
@@ -104,7 +104,7 @@ router.get('/:id(\\d+)/media', auth_media(true), async(req, res) => {
 })
 
 // GET /media/<id>/thumbnail - Retrieve raw thumbnail
-router.get('/:id(\\d+)/thumbnail', auth_media(true), async(req, res) => {
+router.get('/:id(\\d+)/thumbnail/:shared(shared)?', auth_media(true), async(req, res) => {
 
 	res.sendFile(process.env['MEDIA_ROOT'] + '/' + req.params['id'] + '.thumbnail.jpg', (err) => {
 		if(err){

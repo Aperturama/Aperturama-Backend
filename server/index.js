@@ -16,7 +16,9 @@ app.use(jwt({secret: fs.readFileSync(process.env['JWT_KEY']), algorithms: ['HS25
 .unless({
 	path: [
 		{url: '/api/' + API_VERSION + '/user', methods: ['POST']},
-		{url: '/api/' + API_VERSION + '/user/login'}
+		{url: '/api/' + API_VERSION + '/user/login'},
+		{url: /^\/api\/v\d+\/media\/\d+\/media\/shared/, methods: ['GET']},
+		{url: /^\/api\/v\d+\/media\/\d+\/thumbnail\/shared/, methods: ['GET']}
 	]
 }))
 .use((err, req, res, next) => {
