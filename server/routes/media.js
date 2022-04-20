@@ -142,7 +142,7 @@ router.post('/', multer.any(), async(req, res) => {
 	await fs.promises.rename(file.path, file.destination + '/' + query.rows[0]['media_id'] + extension);
 	// TODO: Error handling
 
-	res.sendStatus(200);
+	res.json(query.rows[0]);
 
 });
 
