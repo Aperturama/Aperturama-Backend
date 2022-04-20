@@ -143,4 +143,15 @@ router.delete('/:id(\\d+)/share/link/:code', auth_collection(), async(req, res) 
 
 });
 
+// DELETE /collections/<id>/share - Stop sharing collection with anyone
+router.delete('/:id(\\d+)/share', auth_collection(), async(req, res) => {
+
+	// Delete collection sharing entries
+	await db.query('DELETE FROM aperturama.collection_sharing WHERE collection_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	res.sendStatus(200);
+
+});
+
 module.exports = router;
