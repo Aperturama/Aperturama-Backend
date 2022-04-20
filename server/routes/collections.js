@@ -84,4 +84,25 @@ router.delete('/:id(\\d+)/media/:mediaid(\\d+)', auth_collection(), async(req, r
 
 });
 
+// POST /collections/<id>/share/user - Share collection with a user
+router.post('/:id(\\d+)/share/user', auth_collection(), async(req, res) => {
+
+	// Get shared user's ID from email
+	const query = await db.query('SELECT user_id FROM aperturama.user WHERE email = $1', [req.body['email']]);
+	// TODO: Error handling
+
+	if(query.rows.length === 1){
+
+		// Share collection with the user
+		await db.query('INSERT INTO aperturama.collection_sharing (collection_id, shared_to_user_id) VALUES ($1, $2)', [req.params['id'], query.rows[0]['user_id']]);
+		// TODO: Error handling
+
+		res.sendStatus(200);
+
+	}else{
+		res.sendStatus(404);
+	}
+
+});
+
 module.exports = router;
