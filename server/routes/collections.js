@@ -27,9 +27,25 @@ router.post('/', async(req, res) => {
 // GET /collections/<id> - Get a collection and its media
 router.get('/:id(\\d+)', auth_collection(), async(req, res) => {
 
+	let collection = {sharing: []};
+
 	// Get collection metadata
 	let query = await db.query('SELECT name FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
-	let collection = {name: query.rows[0]['name']};
+	collection['name'] = query.rows[0]['name'];
+	// TODO: Error handling
+
+	// Get users shared with
+	query = await db.query('SELECT email FROM aperturama.user JOIN aperturama.collection_sharing ON aperturama.user.user_id=aperturama.collection_sharing.shared_to_user_id WHERE aperturama.collection_sharing.collection_id = $1 AND aperturama.collection_sharing.shared_link_code IS NULL', [req.params['id']]);
+	if(query.rows.length > 0){
+		query.rows.forEach(row => collection['sharing'].push(row));
+	}
+	// TODO: Error handling
+
+	// Get links shared with
+	query = await db.query('SELECT shared_link_code AS code, shared_link_password AS password FROM aperturama.collection_sharing WHERE collection_id = $1 AND shared_to_user_id IS NULL', [req.params['id']]);
+	if(query.rows.length > 0){
+		query.rows.forEach(row => collection['sharing'].push(row));
+	}
 	// TODO: Error handling
 
 	// Get media in collection
