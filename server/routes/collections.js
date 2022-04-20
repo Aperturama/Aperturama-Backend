@@ -67,8 +67,16 @@ router.delete('/:id(\\d+)', auth_collection(),async(req, res) => {
 router.post('/:id(\\d+)', auth_collection(), auth_media(), async(req, res) => {
 
 	// Add media to collection
-	await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.body['media_id']]);
-	// TODO: Error handling
+	try{
+		await db.query('INSERT INTO aperturama.collection_media (collection_id, media_id) VALUES ($1, $2)', [req.params['id'], req.body['media_id']]);
+	}catch(err){
+		// Unique violation, meaning media is already in collection
+		if(err.code == 23505){
+			return res.sendStatus(304);
+		}else{
+			return res.sendStatus(500);
+		}
+	}
 
 	res.sendStatus(200);
 
