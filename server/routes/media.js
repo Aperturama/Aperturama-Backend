@@ -135,7 +135,7 @@ router.post('/', multer.any(), async(req, res) => {
 	}
 
 	// Compute hash of media
-	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(file.path)).digest('base64url');
+	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(file.path)).digest('hex');
 
 	// Create media entry in database
 	const query = await db.query('INSERT INTO aperturama.media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], file.originalname, hash]);
