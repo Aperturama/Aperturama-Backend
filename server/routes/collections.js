@@ -23,13 +23,20 @@ router.post('/', async(req, res) => {
 
 });
 
-// GET /collections/<id> - Get media in a collection
+// GET /collections/<id> - Get a collection and its media
 router.get('/:id(\\d+)', auth_collection(), async(req, res) => {
 
-	// Get media in collection
-	const query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [req.params['id']]);
+	// Get collection metadata
+	let query = await db.query('SELECT name FROM aperturama.collection WHERE collection_id = $1', [req.params['id']]);
+	let collection = {name: query.rows[0]['name']};
 	// TODO: Error handling
-	res.json(query.rows);
+
+	// Get media in collection
+	query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [req.params['id']]);
+	collection['media'] = query.rows;
+	// TODO: Error handling
+
+	res.json(collection);
 
 });
 
