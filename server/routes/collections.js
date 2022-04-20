@@ -2,6 +2,7 @@ const router = require('express').Router();
 const {db} = require('../db');
 const auth_media = require('../middleware/auth_media');
 const auth_collection = require('../middleware/auth_collection');
+const crypto = require('crypto');
 
 // GET /collections - Retrieve list of user's collections
 router.get('/', async(req, res) => {
@@ -112,6 +113,22 @@ router.delete('/:id(\\d+)/share/user', auth_collection(), async(req, res) => {
 	// TODO: Error handling
 
 	res.sendStatus(200);
+
+});
+
+// POST /collections/<id>/share/link - Share collection with a link
+router.post('/:id(\\d+)/share/link', auth_collection(), async(req, res) => {
+
+	console.log(req.body);
+
+	// Create random code for link if not given
+	const code = req.body['code'] ?? crypto.randomBytes(32).toString('base64url');
+
+	// Create link in database
+	await db.query('INSERT INTO aperturama.collection_sharing (collection_id, shared_link_code, shared_link_password) VALUES ($1, $2, $3)', [req.params['id'], code, req.body['password'] ?? null]);
+	// TODO: Error handling
+
+	res.json({code: code});
 
 });
 
