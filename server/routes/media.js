@@ -173,4 +173,15 @@ router.delete('/:id(\\d+)/share/link/:code', auth_media(), async(req, res) => {
 
 });
 
+// DELETE /media/<id>/share - Stop sharing media with anyone
+router.delete('/:id(\\d+)/share', auth_media(), async(req, res) => {
+
+	// Delete media sharing entries
+	await db.query('DELETE FROM aperturama.media_sharing WHERE media_id = $1', [req.params['id']]);
+	// TODO: Error handling
+
+	res.sendStatus(200);
+
+});
+
 module.exports = router
