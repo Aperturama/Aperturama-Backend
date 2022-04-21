@@ -26,8 +26,7 @@ router.post('/', async(req, res) => {
 		const hashString = await hash(req.body['password']);
 
 		// Create new user in database
-		const result = await db.query('INSERT INTO aperturama.user (email, first_name, last_name, password) VALUES ($1, $2, $3, $4)', [req.body['email'], req.body['first_name'], req.body['last_name'], hashString]);
-		// TODO: Error handling (user already exists)
+		await db.query('INSERT INTO aperturama.user (email, first_name, last_name, password) VALUES ($1, $2, $3, $4)', [req.body['email'], req.body['first_name'], req.body['last_name'], hashString]);
 
 		res.sendStatus(200);
 
@@ -42,7 +41,6 @@ router.post('/login', async(req, res) => {
 
 	// Get user information from database
 	const result = await db.query('SELECT user_id, password FROM aperturama.user WHERE email = $1', [req.body['email']]);
-	// TODO: Error handling
 
 	if(result.rows.length === 1){
 
@@ -72,7 +70,6 @@ router.get('/', async(req, res) => {
 
 	// Get user information from database
 	const result = await db.query('SELECT user_id, email, first_name, last_name FROM aperturama.user WHERE user_id = $1', [req.user['sub']]);
-	// TODO: Error handling
 
 	res.json(result.rows[0]);
 
@@ -83,7 +80,6 @@ router.put('/', async(req, res) => {
 
 	// Update name and email
 	await db.query('UPDATE aperturama.user SET (first_name, last_name, email) = ($2, $3, $4) WHERE user_id = $1', [req.user.sub, req.body['first_name'], req.body['last_name'], req.body['email']]);
-	// TODO: Error handling
 
 	// Update password if given
 	if(req.body['password']){
@@ -93,7 +89,6 @@ router.put('/', async(req, res) => {
 
 		// Update hash in database
 		await db.query('UPDATE aperturama.user SET password = $2 WHERE user_id = $1', [req.user.sub, hashString]);
-		// TODO: Error handling
 
 	}
 
@@ -114,24 +109,20 @@ router.get('/statistics', async(req, res) => {
 
 	// Get media list for user
 	const result = await db.query('SELECT media_id, filename FROM aperturama.media WHERE owner_user_id = $1', [req.user['sub']]);
-	// TODO: Error handling
 
 	// Media count
 	stats['n_media'] = result.rows.length;
 
 	// Get collections count for user
 	stats['n_collections'] = parseInt((await db.query('SELECT COUNT(1) AS count FROM aperturama.collection WHERE owner_user_id = $1', [req.user['sub']])).rows[0]['count']);
-	// TODO: Error handling
 
 	// Get shared item count for user (sum of shared media and shared collections)
 	stats['n_shared'] = parseInt((await db.query('SELECT (SELECT COUNT(1) FROM aperturama.media_sharing JOIN aperturama.media ON media_sharing.media_id = media.media_id WHERE owner_user_id = $1) + (SELECT COUNT(1) FROM aperturama.collection_sharing JOIN aperturama.collection ON collection_sharing.collection_id = collection.collection_id WHERE owner_user_id = $1) AS count', [req.user['sub']])).rows[0]['count']);
-	// TODO: Error handling
 
 	// Get disk usage for media and thumbnails
 	for(let media of result.rows){
 		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + media['filename'].match(/\.[^.]+$/)[0])).size;
 		stats['bytes_used'] += (await fs.promises.stat(process.env['MEDIA_ROOT'] + '/' + media['media_id'] + '.thumbnail.jpg')).size;
-		// TODO: Error handling
 	}
 
 	// Get total disk space

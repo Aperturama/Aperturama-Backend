@@ -15,8 +15,10 @@ const API_VERSION = 'v1'
 app.use(jwt({secret: fs.readFileSync(process.env['JWT_KEY']), algorithms: ['HS256']})
 .unless({
 	path: [
+		// Don't check token for login endpoints
 		{url: '/api/' + API_VERSION + '/user', methods: ['POST']},
 		{url: '/api/' + API_VERSION + '/user/login'},
+		// Don't check token for shared media endpoints (code/password will be used instead)
 		{url: /^\/api\/v\d+\/media\/\d+\/media\/shared/, methods: ['GET']},
 		{url: /^\/api\/v\d+\/media\/\d+\/thumbnail\/shared/, methods: ['GET']}
 	]

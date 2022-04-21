@@ -1,5 +1,6 @@
 const {db} = require('../db');
 
+// Middleware for authorizing access to a collection
 module.exports = (check_shared = false) => {
 	return async(req, res, next) => {
 
@@ -16,7 +17,7 @@ module.exports = (check_shared = false) => {
 			res.sendStatus(500);
 		}
 
-		// Check if non-owner has access to collection through sharing, and TODO: check privileges
+		// Check if non-owner has access to collection through sharing
 		if(check_shared){
 
 			// Check if authenticated user has shared access to media

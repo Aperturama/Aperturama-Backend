@@ -1,5 +1,6 @@
 const {db} = require('../db');
 
+// Middleware for authorizing access to a media item
 module.exports = (check_shared = false) => {
 	return async(req, res, next) => {
 
