@@ -20,8 +20,14 @@ router.get('/', async(req, res) => {
 router.get('/shared', async(req, res) => {
 
 	try{
-		const query = await db.query('SELECT aperturama.collection.collection_id, name FROM aperturama.collection JOIN aperturama.collection_sharing ON aperturama.collection.collection_id=aperturama.collection_sharing.collection_id WHERE shared_to_user_id = $1', [req.user.sub]);
-		res.json(query.rows);
+		let query = await db.query('SELECT aperturama.collection.collection_id, name FROM aperturama.collection JOIN aperturama.collection_sharing ON aperturama.collection.collection_id=aperturama.collection_sharing.collection_id WHERE shared_to_user_id = $1', [req.user.sub]);
+		let collections = query.rows;
+		for(let i = 0; i < query.rows.length; ++i){
+			query = await db.query('SELECT media_id FROM aperturama.collection_media WHERE collection_id = $1', [collections[i]['collection_id']]);
+			collections[i]['media'] = query.rows;
+		}
+
+		res.json(collections);
 	}catch(err){
 		res.sendStatus(500);
 	}
