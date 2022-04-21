@@ -41,7 +41,7 @@ router.post('/', async(req, res) => {
 });
 
 // GET /collections/<id> - Get a collection and its media
-router.get('/:id(\\d+)', auth_collection(), async(req, res) => {
+router.get('/:id(\\d+)', auth_collection(true), async(req, res) => {
 
 	try{
 		let collection = {sharing: []};
