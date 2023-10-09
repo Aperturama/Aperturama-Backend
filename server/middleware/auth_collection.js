@@ -9,7 +9,7 @@ module.exports = (check_shared = false) => {
 
 		// Check if authenticated user is owner of collection
 		try{
-			const query = await db.query('SELECT COUNT(1) AS count FROM aperturama.collection WHERE collection_id = $1 AND owner_user_id = $2', [collection_id, user_id]);
+			const query = await db.query('SELECT COUNT(1) AS count FROM collections WHERE collection_id = $1 AND owner_user_id = $2', [collection_id, user_id]);
 			if(parseInt(query.rows[0]['count']) === 1){
 				return next();// Continue since authorized
 			}
@@ -22,7 +22,7 @@ module.exports = (check_shared = false) => {
 
 			// Check if authenticated user has shared access to media
 			try{
-				const query = await db.query('SELECT COUNT(1) AS count FROM aperturama.collection_sharing WHERE collection_id = $1 AND shared_to_user_id = $2', [collection_id, user_id]);
+				const query = await db.query('SELECT COUNT(1) AS count FROM collection_sharing WHERE collection_id = $1 AND shared_to_user_id = $2', [collection_id, user_id]);
 				if(parseInt(query.rows[0]['count']) === 1){
 					return next();// Continue since authorized
 				}
@@ -37,7 +37,7 @@ module.exports = (check_shared = false) => {
 			if(share_code){
 
 				try{
-					const query = await db.query('SELECT COUNT(1) AS count FROM aperturama.collection_sharing WHERE collection_id = $1 AND shared_link_code = $2 AND (shared_link_password IS NULL OR shared_link_password = $3)', [collection_id, share_code, share_password]);
+					const query = await db.query('SELECT COUNT(1) AS count FROM collection_sharing WHERE collection_id = $1 AND shared_link_code = $2 AND (shared_link_password IS NULL OR shared_link_password = $3)', [collection_id, share_code, share_password]);
 					if(parseInt(query.rows[0]['count']) === 1){
 						return next();// Continue since authorized
 					}

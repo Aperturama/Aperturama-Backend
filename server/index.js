@@ -12,7 +12,7 @@ const app = express();
 const API_VERSION = 'v1'
 
 // Authentication middleware
-app.use(jwt({secret: fs.readFileSync(process.env['JWT_KEY']), algorithms: ['HS256']})
+app.use(jwt({secret: process.env['JWT_KEY'], algorithms: ['HS256']})
 .unless({
 	path: [
 		// Don't check token for login endpoints
