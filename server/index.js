@@ -1,8 +1,7 @@
 // Load environment variables from .env file
 require('dotenv').config()
 
-const jwt = require('express-jwt');
-const fs = require("fs");
+const { expressjwt: jwt } = require('express-jwt');
 
 // Initialize Express
 const express = require('express');
@@ -10,6 +9,12 @@ const app = express();
 
 // The version of the API (included in URL)
 const API_VERSION = 'v1'
+
+const logger = require("morgan");
+app.use(logger("dev"));
+
+const cors = require("cors");
+app.use(cors());
 
 // Authentication middleware
 app.use(jwt({secret: process.env['JWT_KEY'], algorithms: ['HS256']})
