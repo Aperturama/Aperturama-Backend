@@ -9,8 +9,8 @@ CREATE TABLE users (
 CREATE TABLE media (
     media_id SERIAL PRIMARY KEY,
     owner_user_id INT,
-    date_uploaded DATE,
-    date_taken DATE,
+    date_uploaded DATE DEFAULT now(),
+    date_taken DATE DEFAULT now(),
     filename VARCHAR(255),
     hash VARCHAR(255),
     FOREIGN KEY (owner_user_id) REFERENCES users(user_id)
