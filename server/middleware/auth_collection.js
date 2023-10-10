@@ -5,7 +5,7 @@ module.exports = (check_shared = false) => {
 	return async(req, res, next) => {
 
 		const collection_id = req.params['id'];// Get collection ID from URL parameter
-		const user_id = req.user.sub;// Get authenticated user ID from token
+		const user_id = req.auth.sub;// Get authenticated user ID from token
 
 		// Check if authenticated user is owner of collection
 		try{

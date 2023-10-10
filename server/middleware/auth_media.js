@@ -5,7 +5,7 @@ module.exports = (check_shared = false) => {
 	return async(req, res, next) => {
 
 		const media_id = req.body['media_id'] ?? req.params['id'];// Get media ID from URL if not given in body
-		const user_id = req.user ? req.user.sub : null;// Get authenticated user ID from token
+		const user_id = req.auth ? req.auth.sub : null;// Get authenticated user ID from token
 
 		// Check if authenticated user is owner of media
 		try{

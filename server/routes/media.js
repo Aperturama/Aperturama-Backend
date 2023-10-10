@@ -10,7 +10,7 @@ const auth_media = require('../middleware/auth_media');
 // GET /media - Retrieve list of user's media
 router.get('/', async(req, res) => {
 
-	const query = await db.query('SELECT media_id, date_taken, filename FROM media WHERE owner_user_id = $1', [req.user.sub]);
+	const query = await db.query('SELECT media_id, date_taken, filename FROM media WHERE owner_user_id = $1', [req.auth.sub]);
 
 	res.json(query.rows);
 
@@ -19,7 +19,7 @@ router.get('/', async(req, res) => {
 // GET /media/shared - Retrieve list of media shared with user
 router.get('/shared', async(req, res) => {
 
-	const query = await db.query('SELECT media.media_id, date_taken, filename FROM media JOIN media_sharing ON media.media_id=media_sharing.media_id WHERE shared_to_user_id = $1', [req.user.sub]);
+	const query = await db.query('SELECT media.media_id, date_taken, filename FROM media JOIN media_sharing ON media.media_id=media_sharing.media_id WHERE shared_to_user_id = $1', [req.auth.sub]);
 
 	res.json(query.rows);
 
@@ -29,7 +29,7 @@ router.get('/shared', async(req, res) => {
 router.get('/checkhash', async(req, res) => {
 
 	// Check for media with given hash owned by authenticated user
-	const query = await db.query('SELECT COUNT(1) AS count FROM media WHERE hash = $1 AND owner_user_id = $2', [req.body['hash'], req.user.sub]);
+	const query = await db.query('SELECT COUNT(1) AS count FROM media WHERE hash = $1 AND owner_user_id = $2', [req.body['hash'], req.auth.sub]);
 
 	if(parseInt(query.rows[0]['count']) > 0){
 		res.sendStatus(304);// If found, return 304 Not Modified
@@ -128,7 +128,7 @@ router.post('/', multer.any(), async(req, res) => {
 	const hash = crypto.createHash('sha256').update(await fs.promises.readFile(file.path)).digest('hex');
 
 	// Create media entry in database
-	const query = await db.query('INSERT INTO media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.user.sub, exif['DateTimeOriginal'], file.originalname, hash]);
+	const query = await db.query('INSERT INTO media (owner_user_id, date_taken, filename, hash) VALUES ($1, $2, $3, $4) RETURNING media_id', [req.auth.sub, exif['DateTimeOriginal'], file.originalname, hash]);
 
 	// Create thumbnail
 	const thumbnail = await imageThumbnail(file.path, {width: 256, height: 256, fit: 'cover', jpegOptions: {force: true}});

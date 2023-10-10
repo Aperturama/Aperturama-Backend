@@ -8,7 +8,7 @@ const crypto = require('crypto');
 router.get('/', async(req, res) => {
 
 	try{
-		const query = await db.query('SELECT collection_id, name FROM collections WHERE owner_user_id = $1', [req.user.sub]);
+		const query = await db.query('SELECT collection_id, name FROM collections WHERE owner_user_id = $1', [req.auth.sub]);
 		res.json(query.rows);
 	}catch(err){
 		res.sendStatus(500);
@@ -20,7 +20,7 @@ router.get('/', async(req, res) => {
 router.get('/shared', async(req, res) => {
 
 	try{
-		let query = await db.query('SELECT collections.collection_id, name FROM collections JOIN collection_sharing ON collections.collection_id=collection_sharing.collection_id WHERE shared_to_user_id = $1', [req.user.sub]);
+		let query = await db.query('SELECT collections.collection_id, name FROM collections JOIN collection_sharing ON collections.collection_id=collection_sharing.collection_id WHERE shared_to_user_id = $1', [req.auth.sub]);
 		let collections = query.rows;
 		for(let i = 0; i < query.rows.length; ++i){
 			query = await db.query('SELECT media_id FROM collection_media WHERE collection_id = $1', [collections[i]['collection_id']]);
@@ -38,7 +38,7 @@ router.get('/shared', async(req, res) => {
 router.post('/', async(req, res) => {
 
 	try{
-		await db.query('INSERT INTO collections (owner_user_id, name) VALUES ($1, $2)', [req.user.sub, req.body['name'] || 'Untitled']);
+		await db.query('INSERT INTO collections (owner_user_id, name) VALUES ($1, $2)', [req.auth.sub, req.body['name'] || 'Untitled']);
 		res.sendStatus(200);
 	}catch(err){
 		res.sendStatus(500);
