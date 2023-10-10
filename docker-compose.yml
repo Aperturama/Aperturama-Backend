@@ -3,6 +3,7 @@ services:
     server:
         build: server
         container_name: server
+        restart: unless-stopped
         depends_on:
           - database
         volumes:
@@ -20,6 +21,7 @@ services:
     database:
         image: postgres
         container_name: database
+        restart: unless-stopped
         volumes:
           - db:/var/lib/postgresql/data
           - ./schema.sql:/docker-entrypoint-initdb.d/init.sql
